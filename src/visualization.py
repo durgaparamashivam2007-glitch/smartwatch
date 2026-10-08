@@ -58,22 +58,22 @@ def plot_pca_2d(pca_df, cluster_labels, target_labels=None, hover_df=None):
     df_plot = pca_df.copy()
     df_plot['Cluster'] = [f'Cluster {c}' for c in cluster_labels]
     
+    hover_cols = []
     if target_labels is not None:
         df_plot['Activity'] = target_labels.values if isinstance(target_labels, pd.Series) else target_labels
+        hover_cols.append('Activity')
 
-    hover_data = {}
     if hover_df is not None and 'Behavior Group' in hover_df.columns:
-        df_plot['Behavior Group'] = hover_df['Behavior Group']
-        hover_data['Behavior Group'] = True
+        df_plot['Behavior Group'] = hover_df['Behavior Group'].values
+        hover_cols.append('Behavior Group')
 
-    color_col = 'Cluster'
     fig = px.scatter(
         df_plot,
         x='PC1',
         y='PC2',
-        color=color_col,
+        color='Cluster',
         color_discrete_sequence=COLOR_PALETTE,
-        hover_data=['Activity'] if 'Activity' in df_plot.columns else None,
+        hover_data=hover_cols if hover_cols else None,
         title='<b>2D PCA Cluster Scatter Plot</b>'
     )
 
@@ -231,20 +231,21 @@ def plot_feature_comparison(df, cluster_col, feature_cols, profile_df=None):
     sample_cols = feature_cols[:6]
     grouped = df.groupby(cluster_col)[sample_cols].mean().reset_index()
     
+    group_col = 'Behavior Group'
     # Map cluster ID to behavior group if available
     if profile_df is not None and 'Behavior Group' in profile_df.columns:
         cluster_map = dict(zip(profile_df['Cluster_ID'], profile_df['Behavior Group']))
-        grouped['Cluster'] = grouped[cluster_col].map(cluster_map)
+        grouped[group_col] = grouped[cluster_col].map(cluster_map)
     else:
-        grouped['Cluster'] = grouped[cluster_col].apply(lambda x: f'Cluster {x}')
+        grouped[group_col] = grouped[cluster_col].apply(lambda x: f'Cluster {x}')
 
-    melted = grouped.melt(id_vars=[cluster_col, 'Cluster'], value_vars=sample_cols, var_name='Sensor Feature', value_name='Mean Value')
+    melted = grouped.melt(id_vars=[cluster_col, group_col], value_vars=sample_cols, var_name='Sensor Feature', value_name='Mean Value')
 
     fig = px.bar(
         melted,
         x='Sensor Feature',
         y='Mean Value',
-        color='Cluster',
+        color=group_col,
         barmode='group',
         color_discrete_sequence=COLOR_PALETTE,
         title='<b>Average Sensor Feature Measurements Across Activity Behavior Groups</b>'
@@ -259,3 +260,4 @@ def plot_feature_comparison(df, cluster_col, feature_cols, profile_df=None):
     )
 
     return fig
+

@@ -1,3 +1,4 @@
+# Smartwatch Activity Analysis Dashboard v1.0.1
 import os
 import streamlit as st
 import pandas as pd
